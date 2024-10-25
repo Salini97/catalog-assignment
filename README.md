@@ -1,9 +1,9 @@
 #include <iostream>
 #include <fstream>
-#include <cmath>
 #include <vector>
 #include <string>
-#include <nlohmann/json.hpp>
+#include <cmath>
+#include <nlohmann/json.hpp>  // JSON library
 
 using json = nlohmann::json;
 using namespace std;
@@ -15,9 +15,8 @@ long long decodeBaseToDecimal(const string& value, int base) {
     }
     return decimalValue;
 }
-
-double lagrangeInterpolation(const vector<pair<int, long long>>& points) {
-    double constantTerm = 0.0;
+double findConstantTerm(const vector<pair<int, long long>>& points) {
+    double constant = 0.0;
     int k = points.size();
     for (int i = 0; i < k; ++i) {
         double term = points[i].second;
@@ -26,33 +25,36 @@ double lagrangeInterpolation(const vector<pair<int, long long>>& points) {
                 term *= static_cast<double>(-points[j].first) / (points[i].first - points[j].first);
             }
         }
-        constantTerm += term;
+        constant += term;
     }
-    return constantTerm;
+    return constant;
 }
-
-int main() {
-    std::ifstream inputFile("testcase.json");
+int main(int argc, char* argv[]) {
+    if (argc < 2) {
+        cerr << "Usage: " << argv[0] << " <input_file.json>" << endl;
+        return 1;
+    }
+    ifstream inputFile(argv[1]);
     if (!inputFile.is_open()) {
-        cerr << "Error: Could not open input file." << endl;
+        cerr << "Error: Could not open file " << argv[1] << endl;
         return 1;
     }
     json testCase;
     inputFile >> testCase;
     inputFile.close();
-    int n = testCase["keys"]["n"];
     int k = testCase["keys"]["k"];
     vector<pair<int, long long>> points;
-    for (json::iterator it = testCase.begin(); it != testCase.end(); ++it) {
-        if (it.key() == "keys") continue;
-        int x = stoi(it.key());
-        int base = it.value()["base"];
-        string encodedValue = it.value()["value"];
-        long long y = decodeBaseToDecimal(encodedValue, base);
+    for (auto& item : testCase.items()) {
+        if (item.key() == "keys") continue;
+        int x = stoi(item.key());                 
+        int base = item.value()["base"];          
+        string encodedValue = item.value()["value"]; 
+        long long y = decodeBaseToDecimal(encodedValue, base);  
         points.push_back({x, y});
     }
     points.resize(k);
-    double secretConstant = lagrangeInterpolation(points);
-    cout << "Secret constant term (c): " << static_cast<long long>(round(secretConstant)) << endl;
+    double constantTerm = findConstantTerm(points);
+    cout << "Constant term (c): " << round(constantTerm) << endl;
+
     return 0;
 }
